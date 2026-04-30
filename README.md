@@ -1,4 +1,4 @@
-# Title
+# while (true) stayTogether();
 
 **Theme**: Systems & Structures
 
@@ -17,4 +17,5 @@ We worked on all aspects of the project together, but the primary responsibiliti
 - **Game Logic**: Gagik
 
 ### Live Demo
+
 Coming soon...
