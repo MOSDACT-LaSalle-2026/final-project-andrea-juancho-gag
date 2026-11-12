@@ -1,5 +1,9 @@
-const width = window.innerWidth
-const height = window.innerHeight
+const mode = 'controller' // 'socketio' or 'controller'
+
+let width = window.innerWidth
+let height = window.innerHeight
+let centerX = width / 2
+let centerY = height / 2
 
 let playersGP //= createGraphics(width, height) 
 let ballsGP
@@ -22,6 +26,8 @@ let player1Tilt = 'still'
 let player2Tilt = 'still'
 
 let gameState = 'START' // 'START' or 'PLAYING'
+let prevGamepadStart = false
+let prevGamepadReset = false
 
 let maxSimultaneousSounds = 10 // Limit for sound effects
 let currentSoundCount = 0
@@ -35,6 +41,10 @@ function preload() {
 }
 
 function setup() {
+    width = windowWidth
+    height = windowHeight
+    centerX = width / 2
+    centerY = height / 2
     createCanvas(width, height)
     frameRate(60)
 
@@ -61,73 +71,155 @@ function setup() {
     balls.push(new Ball(ballSpawnDistance, centerY, ballSize, color(255), ballInitSpeed))
     balls[0].spawn()
 
-    const bridge1 = createBridge().connect("101")
-    const bridge2 = createBridge().connect("102")
+    if (mode !== 'controller') {
+        const bridge1 = createBridge().connect("101")
+        const bridge2 = createBridge().connect("102")
 
-    bridge1.on("pong-gyro", (e) => {
-        console.log(e.values)
-        player1Tilt = e.values.state
-    })
+        bridge1.on("pong-gyro", (e) => {
+            console.log(e.values)
+            player1Tilt = e.values.state
+        })
 
-    bridge2.on("pong-gyro", (e) => {
-        player2Tilt = e.values.state
-    })
+        bridge2.on("pong-gyro", (e) => {
+            player2Tilt = e.values.state
+        })
 
-    bridge1.on("btn-up", (e) => {
-        if (e.values) {
-            player1Tilt = "forward"
-        }
-        else {
-            player1Tilt = "still"
-        }
-    })
+        bridge1.on("btn-up", (e) => {
+            if (e.values) {
+                player1Tilt = "forward"
+            }
+            else {
+                player1Tilt = "still"
+            }
+        })
 
-    bridge1.on("btn-down", (e) => {
-        if (e.values) {
-            player1Tilt = "backward"
-        }
-        else {
-            player1Tilt = "still"
-        }
-    })
+        bridge1.on("btn-down", (e) => {
+            if (e.values) {
+                player1Tilt = "backward"
+            }
+            else {
+                player1Tilt = "still"
+            }
+        })
 
-    bridge2.on("btn-up", (e) => {
-        if (e.values) {
-            player2Tilt = "forward"
-        }
-        else {
-            player2Tilt = "still"
-        }
-    })
+        bridge2.on("btn-up", (e) => {
+            if (e.values) {
+                player2Tilt = "forward"
+            }
+            else {
+                player2Tilt = "still"
+            }
+        })
 
-    bridge2.on("btn-down", (e) => {
-        if (e.values) {
-            player2Tilt = "backward"
-        }
-        else {
-            player2Tilt = "still"
-        }
-    })
+        bridge2.on("btn-down", (e) => {
+            if (e.values) {
+                player2Tilt = "backward"
+            }
+            else {
+                player2Tilt = "still"
+            }
+        })
+    }
 }
 
-const centerX = width / 2
-const centerY = height / 2
-const starRadius = Math.min(width, height) * 0.45
+function windowResized() {
+    width = windowWidth
+    height = windowHeight
+    centerX = width / 2
+    centerY = height / 2
+
+    resizeCanvas(width, height)
+
+    playersGP = createGraphics(width, height)
+    playersGP.noStroke()
+
+    ballsGP = createGraphics(width, height)
+    ballsGP.pixelDensity(1)
+    ballsGP.noStroke()
+
+    if (player2) {
+        player2.x = width - 60
+    }
+
+    if (player1) {
+        player1.setY(player1.y)
+    }
+    if (player2) {
+        player2.setY(player2.y)
+    }
+
+    if (gameState === 'START') {
+        if (player1) {
+            player1.y = height / 2 - player1.height / 2
+        }
+        if (player2) {
+            player2.y = height / 2 - player2.height / 2
+        }
+        if (balls.length > 0) {
+            balls[0].y = centerY
+        }
+    }
+}
 
 
 function draw() {
 
     // Controls
-    if (keyIsDown(87) || player1Tilt === "forward") { // W
+    let p1Up = keyIsDown(87) || player1Tilt === "forward"
+    let p1Down = keyIsDown(83) || player1Tilt === "backward"
+    let p2Up = keyIsDown(38) || player2Tilt === "forward"
+    let p2Down = keyIsDown(40) || player2Tilt === "backward"
+
+    if (mode === 'controller') {
+        const activeGamepads = Array.from(navigator.getGamepads()).filter(gp => gp !== null)
+
+        if (activeGamepads.length >= 2) {
+            const gp1 = activeGamepads[0]
+            const gp2 = activeGamepads[1]
+
+            if (gp1.axes[1] < -0.2 || gp1.buttons[12].pressed) p1Up = true
+            if (gp1.axes[1] > 0.2 || gp1.buttons[13].pressed) p1Down = true
+
+            if (gp2.axes[1] < -0.2 || gp2.buttons[12].pressed) p2Up = true
+            if (gp2.axes[1] > 0.2 || gp2.buttons[13].pressed) p2Down = true
+        } else if (activeGamepads.length === 1) {
+            const gp = activeGamepads[0]
+
+            if (gp.axes[1] < -0.2 || gp.buttons[12].pressed) p1Up = true
+            if (gp.axes[1] > 0.2 || gp.buttons[13].pressed) p1Down = true
+
+            if (gp.axes[3] < -0.2) p2Up = true
+            if (gp.axes[3] > 0.2) p2Down = true
+        }
+
+        let startPressed = false
+        let resetPressed = false
+        for (const gp of activeGamepads) {
+            if (gp.buttons[9].pressed || gp.buttons[0].pressed) startPressed = true
+            if (gp.buttons[8].pressed || gp.buttons[3].pressed) resetPressed = true
+        }
+
+        if (startPressed && !prevGamepadStart) {
+            startGame()
+        }
+        if (resetPressed && !prevGamepadReset) {
+            resetGame()
+        }
+
+        prevGamepadStart = startPressed
+        prevGamepadReset = resetPressed
+    }
+
+    if (p1Up) {
         player1.setY(player1.y - 10)
     }
-    if (keyIsDown(83) || player1Tilt === "backward") { // S
+    if (p1Down) {
         player1.setY(player1.y + 10)
     }
-    if (keyIsDown(38) || player2Tilt === "forward") { // ArrowUp
+    if (p2Up) {
         player2.setY(player2.y - 10)
     }
-    if (keyIsDown(40) || player2Tilt === "backward") { // ArrowDown
+    if (p2Down) {
         player2.setY(player2.y + 10)
     }
 
@@ -144,8 +236,28 @@ function draw() {
         // Instruction text
         fill(255)
         textAlign(CENTER, CENTER)
-        textSize(40)
-        text("PRESS 'P' TO START", width / 2, height / 2)
+        if (mode === 'controller') {
+            textSize(38)
+            text("PRESS 'A' TO PLAY", width / 2, height / 2 - 25)
+            textSize(22)
+            fill(200)
+            text("PRESS 'Y' TO RESTART", width / 2, height / 2 + 30)
+
+            const activeGamepads = Array.from(navigator.getGamepads()).filter(gp => gp !== null)
+            textSize(18)
+            fill(160)
+            if (activeGamepads.length > 0) {
+                text(`CONTROLLERS DETECTED: ${activeGamepads.length}`, width / 2, height / 2 + 80)
+            } else {
+                text("NO CONTROLLER DETECTED (PRESS ANY BUTTON TO ACTIVATE)", width / 2, height / 2 + 80)
+            }
+        } else {
+            textSize(40)
+            text("PRESS 'P' TO START", width / 2, height / 2 - 25)
+            textSize(22)
+            fill(200)
+            text("PRESS 'R' TO RESTART", width / 2, height / 2 + 30)
+        }
 
     } else if (gameState === 'PLAYING') {
         fadeBall(ballsGP)
@@ -198,14 +310,18 @@ function draw() {
     }
 }
 
+function startGame() {
+    if (gameState === 'START') {
+        gameState = 'PLAYING'
+        if (!bgSound.isPlaying()) {
+            bgSound.loop()
+        }
+    }
+}
+
 function keyPressed() {
     if (key === 'p' || key === 'P') {
-        if (gameState === 'START') {
-            gameState = 'PLAYING'
-            if (!bgSound.isPlaying()) {
-                bgSound.loop()
-            }
-        }
+        startGame()
     }
     if (key === 'r' || key === 'R') {
         resetGame()

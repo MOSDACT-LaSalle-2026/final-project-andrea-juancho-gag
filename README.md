@@ -18,4 +18,4 @@ We worked on all aspects of the project together, but the primary responsibiliti
 
 ### Live Demo
 
-Coming soon...
+[Click to Play](https://mosdact-lasalle-2026.github.io/final-project-andrea-juancho-gag/)
