@@ -60,7 +60,13 @@ The installation is designed for standard USB or wireless controllers (e.g., Xbo
 
 ---
 
-## 4. Maintenance & Troubleshooting
+## 4. Museum Idle & Auto-Reset
+
+- **Automatic Reset (20-Second Inactivity)**: If visitors leave the installation during gameplay and neither paddle moves for **20 seconds**, the game automatically resets back to the start screen. This ensures the installation is always ready and welcoming for the next visitor without requiring staff intervention.
+
+---
+
+## 5. Maintenance & Troubleshooting
 
 - **Controllers not responding / disconnected**:
   Press any face button or D-pad button on the controller to wake it up in the browser. If still not detected, unplug and re-plug the USB cable, then press a button.

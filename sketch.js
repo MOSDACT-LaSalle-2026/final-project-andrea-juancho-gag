@@ -28,6 +28,8 @@ let player2Tilt = 'still'
 let gameState = 'START' // 'START' or 'PLAYING'
 let prevGamepadStart = false
 let prevGamepadReset = false
+let lastMoveTime = 0
+const idleTimeout = 20000 // 20 seconds of inactivity to auto-reset
 
 let maxSimultaneousSounds = 10 // Limit for sound effects
 let currentSoundCount = 0
@@ -223,6 +225,12 @@ function draw() {
         player2.setY(player2.y + 10)
     }
 
+    if (p1Up || p1Down || p2Up || p2Down) {
+        lastMoveTime = millis()
+    } else if (gameState === 'PLAYING' && millis() - lastMoveTime >= idleTimeout) {
+        resetGame()
+    }
+
 
     playersGP.clear()
 
@@ -313,6 +321,7 @@ function draw() {
 function startGame() {
     if (gameState === 'START') {
         gameState = 'PLAYING'
+        lastMoveTime = millis()
         if (!bgSound.isPlaying()) {
             bgSound.loop()
         }
